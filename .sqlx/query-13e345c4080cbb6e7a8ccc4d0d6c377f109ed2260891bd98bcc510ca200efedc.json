@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n      SELECT\n        MAX(created_at) AS created_at\n      , id\n      FROM enrollments\n      WHERE guild_id = ? AND user_id = ?\n    ",
+  "describe": {
+    "columns": [
+      {
+        "name": "created_at",
+        "ordinal": 0,
+        "type_info": "Int64"
+      },
+      {
+        "name": "id",
+        "ordinal": 1,
+        "type_info": "Int64"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      true,
+      true
+    ]
+  },
+  "hash": "13e345c4080cbb6e7a8ccc4d0d6c377f109ed2260891bd98bcc510ca200efedc"
+}

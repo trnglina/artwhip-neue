@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n      INSERT INTO\n        enrollments (\n          guild_id\n        , user_id\n        , channel_id\n        , created_at\n        , starting_at\n        , interval_hours\n      )\n      VALUES (?, ?, ?, ?, ?, ?)\n    ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 6
+    },
+    "nullable": []
+  },
+  "hash": "ce3b72aa5ebf71c453ae73cdbcfecf22bde686cdd9c3ae92804017b0af387cee"
+}

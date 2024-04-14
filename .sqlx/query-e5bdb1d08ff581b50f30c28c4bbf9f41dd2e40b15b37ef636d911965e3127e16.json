@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n      INSERT INTO shares (enrollment_id, created_at)\n      VALUES (?, ?)\n    ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "e5bdb1d08ff581b50f30c28c4bbf9f41dd2e40b15b37ef636d911965e3127e16"
+}

@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "\n      SELECT\n        id\n      , created_at as \"created_at: DateTime<Local>\"\n      , starting_at as \"starting_at: DateTime<Local>\"\n      , interval_hours\n      FROM enrollments\n      WHERE id = ?\n    ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Int64"
+      },
+      {
+        "name": "created_at: DateTime<Local>",
+        "ordinal": 1,
+        "type_info": "Int64"
+      },
+      {
+        "name": "starting_at: DateTime<Local>",
+        "ordinal": 2,
+        "type_info": "Int64"
+      },
+      {
+        "name": "interval_hours",
+        "ordinal": 3,
+        "type_info": "Int64"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "79e893ee3716a6fd67517f6f66c063a85aef2f83382d62edb836a47263b23b45"
+}
