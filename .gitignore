@@ -1,0 +1,6 @@
+.DS_Store
+.env
+
+/.direnv
+/target
+/db.sqlite*
