@@ -44,12 +44,14 @@ pub async fn create_enrollment(
         r#"You are a date parsing service. You will receive an input in natural
            language, and you must convert it into an RFC 3339 format string,
            taking into account the current time if and only if the input is
-           relative.
-
+           relative. Only resolve times in the future. If the input is a
+           relative time in the past, you may output {} as a fallback.
+           
            Do not output anything other than the RFC 3339 string.
            
            The current time zone is: +0900 (UTC +0900).
            The current time in RFC 3339 format is: {}."#,
+        now + Duration::hours(interval_hours),
         now.to_rfc3339(),
       ));
 
