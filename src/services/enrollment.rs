@@ -38,10 +38,15 @@ pub async fn create_enrollment(
 ) -> Result<(DateTime<Local>, i64), anyhow::Error> {
   let now = Local::now();
   let interval_hours: i64 = interval.unwrap_or(24);
+  let fallback = now + Duration::hours(interval_hours);
+
   let starting_at = match start {
     Some(start) => {
-      let mut conversation = chatgpt.new_conversation_directed(format!(
-        r#"You are a date parsing service. You will receive an input in natural
+      if start.len() > 500 {
+        fallback
+      } else {
+        let mut conversation = chatgpt.new_conversation_directed(format!(
+          r#"You are a date parsing service. You will receive an input in natural
            language, and you must convert it into an RFC 3339 format string,
            taking into account the current time if and only if the input is
            relative. Only resolve times in the future. If the input is a
@@ -51,14 +56,15 @@ pub async fn create_enrollment(
            
            The current time zone is: +0900 (UTC +0900).
            The current time in RFC 3339 format is: {}."#,
-        now + Duration::hours(interval_hours),
-        now.to_rfc3339(),
-      ));
+          fallback,
+          now.to_rfc3339(),
+        ));
 
-      let response = conversation.send_message(start).await?;
-      DateTime::parse_from_rfc3339(&response.message().content)?.with_timezone(&Local)
+        let response = conversation.send_message(start).await?;
+        DateTime::parse_from_rfc3339(&response.message().content)?.with_timezone(&Local)
+      }
     }
-    None => now + Duration::hours(interval_hours),
+    None => fallback,
   };
 
   info!(
