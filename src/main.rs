@@ -6,10 +6,13 @@ use chatgpt::{
 };
 use chrono::{DateTime, Local};
 use poise::{
-  serenity_prelude::{self as serenity, json::json, CacheHttp},
+  serenity_prelude::{self as serenity, CacheHttp},
   FrameworkError,
 };
-use services::{enrollment::get_enrollment_id, reminder::get_reminders, share::create_share};
+use serde_json::json;
+use services::{
+  enrollment::get_enrollment_id, gif::get_gif, reminder::get_reminders, share::create_share,
+};
 use sqlx::SqlitePool;
 use tokio::{task, time};
 use tracing::error;
@@ -37,19 +40,30 @@ fn spawn_reminders_task(ctx: serenity::Context, data: Data) {
         continue;
       }
 
-      let reminders = get_reminders(&data.pool, previous_time, now).await.unwrap();
-      for reminder in reminders {
-        ctx
-          .http()
-          .send_message(
-            reminder.channel_id,
-            Vec::new(),
-            &json!({
-              "content": format!("<@{}>, don't forget to post an update.", reminder.user_id)
-            }),
-          )
-          .await
-          .unwrap();
+      match get_reminders(&data.pool, previous_time, now).await {
+        Ok(reminders) => {
+          for reminder in reminders {
+            let gif = get_gif("judgemental cat", 10).await.ok().flatten();
+            let embeds = gif.map(|url| json!([{ "image": { "url": url } }]));
+
+            match ctx
+              .http()
+              .send_message(
+                reminder.channel_id,
+                Vec::new(),
+                &json!({
+                  "content": format!("<@{}>, don't forget to post an update", reminder.user_id),
+                  "embeds": embeds,
+                }),
+              )
+              .await
+            {
+              Ok(_) => (),
+              Err(err) => error!("Failed to send reminder: {}", err),
+            }
+          }
+        }
+        Err(err) => error!("Failed to get reminders: {}", err),
       }
 
       previous_time = now;
