@@ -1,3 +1,5 @@
+use std::cmp::max;
+
 use chrono::{DateTime, Duration, Local};
 use poise::serenity_prelude as serenity;
 use tracing::debug;
@@ -46,6 +48,7 @@ pub async fn get_reminders(
       enrollment.id.unwrap(),
       period_n
     );
+    let effective_start = starting_at + Duration::hours(interval_hours * max(period_n - 1, 0));
     let effective_end = starting_at + Duration::hours(interval_hours * period_n);
 
     if effective_end < start || effective_end >= end {
@@ -56,19 +59,20 @@ pub async fn get_reminders(
       continue;
     }
 
-    if let Some(_) = sqlx::query!(
+    if let Some(share) = sqlx::query!(
       r#"
-        SELECT id
+        SELECT created_at as "created_at: DateTime<Local>"
         FROM shares
-        WHERE enrollment_id = ? AND created_at <= ?
+        WHERE enrollment_id = ? AND created_at > ? AND created_at <= ?
       "#,
       enrollment.id,
+      effective_start,
       effective_end
     )
     .fetch_optional(&mut *tx)
     .await?
     {
-      debug!("Enrollment already shared at {}", effective_end);
+      debug!("Enrollment already shared at {}", share.created_at);
       continue;
     }
 
