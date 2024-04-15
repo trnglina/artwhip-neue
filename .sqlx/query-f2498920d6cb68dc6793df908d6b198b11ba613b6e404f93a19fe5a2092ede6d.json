@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        SELECT created_at as \"created_at: DateTime<Local>\"\n        FROM shares\n        WHERE enrollment_id = ? AND created_at > ? AND created_at <= ?\n      ",
+  "describe": {
+    "columns": [
+      {
+        "name": "created_at: DateTime<Local>",
+        "ordinal": 0,
+        "type_info": "Int64"
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "f2498920d6cb68dc6793df908d6b198b11ba613b6e404f93a19fe5a2092ede6d"
+}
