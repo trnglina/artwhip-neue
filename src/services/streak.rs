@@ -1,5 +1,5 @@
 use chrono::{DateTime, Duration, Local};
-use tracing::debug;
+use tracing::info;
 
 pub async fn get_streak(pool: &sqlx::SqlitePool, enrollment_id: i64) -> Result<i64, anyhow::Error> {
   let enrollment = sqlx::query!(
@@ -28,7 +28,7 @@ pub async fn get_streak(pool: &sqlx::SqlitePool, enrollment_id: i64) -> Result<i
   )
   .fetch_all(pool)
   .await?;
-  debug!(
+  info!(
     "Found {} shares for enrollment {}",
     shares.len(),
     enrollment_id

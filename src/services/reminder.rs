@@ -2,7 +2,7 @@ use std::cmp::max;
 
 use chrono::{DateTime, Duration, Local};
 use poise::serenity_prelude as serenity;
-use tracing::debug;
+use tracing::info;
 
 pub struct Reminder {
   pub user_id: serenity::UserId,
@@ -35,7 +35,7 @@ pub async fn get_reminders(
   .fetch_all(&mut *tx)
   .await?;
 
-  debug!("Found {} relevant enrollments", enrollments.len());
+  info!("Found {} relevant enrollments", enrollments.len());
 
   let mut reminders = Vec::new();
   for enrollment in enrollments {
@@ -43,7 +43,7 @@ pub async fn get_reminders(
     let interval_hours = enrollment.interval_hours.unwrap();
 
     let period_n = (end - starting_at).num_hours() / interval_hours;
-    debug!(
+    info!(
       "Enrollment {} at period {}",
       enrollment.id.unwrap(),
       period_n
@@ -52,7 +52,7 @@ pub async fn get_reminders(
     let effective_end = starting_at + Duration::hours(interval_hours * period_n);
 
     if effective_end < start || effective_end >= end {
-      debug!(
+      info!(
         "Enrollment outside range: {} < {} <= {}",
         start, effective_end, end
       );
@@ -72,7 +72,7 @@ pub async fn get_reminders(
     .fetch_optional(&mut *tx)
     .await?
     {
-      debug!("Enrollment already shared at {}", share.created_at);
+      info!("Enrollment already shared at {}", share.created_at);
       continue;
     }
 

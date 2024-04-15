@@ -1,7 +1,7 @@
 use anyhow::anyhow;
 use rand::seq::IteratorRandom;
 use serde_json::Value;
-use tracing::debug;
+use tracing::info;
 
 fn select_url(response: Value) -> Result<Option<String>, anyhow::Error> {
   let results = response.get("results").ok_or(anyhow!("No `results`"))?;
@@ -32,10 +32,10 @@ pub async fn get_gif(query: &str, sample: u32) -> Result<Option<String>, anyhow:
     std::env::var("TENOR_API_KEY")?,
     sample,
   );
-  debug!(?url);
+  info!(?url);
 
   let response = reqwest::get(url).await?.json::<serde_json::Value>().await?;
-  debug!(?response);
+  info!(?response);
 
   select_url(response)
 }
