@@ -1,6 +1,8 @@
+use chrono::Local;
+
 use crate::{
   services::{
-    enrollment::{create_enrollment, get_enrollment_id},
+    enrollment::{create_enrollment, get_enrollment},
     streak::get_streak,
   },
   Context,
@@ -15,9 +17,10 @@ pub async fn enroll(
   #[description = "Once every how many hours do you want to share? (default: 24)"] //
   interval: Option<i64>,
 ) -> Result<(), anyhow::Error> {
+  let mut conn = ctx.data().pool.acquire().await?;
   if let Some(guild_id) = ctx.guild_id() {
     let (start, interval) = create_enrollment(
-      &ctx.data().pool,
+      &mut conn,
       &ctx.data().chatgpt,
       &guild_id,
       &ctx.author().id,
@@ -42,11 +45,11 @@ pub async fn enroll(
 /// Check your streak!
 #[poise::command(slash_command)]
 pub async fn streak(ctx: Context<'_>) -> Result<(), anyhow::Error> {
+  let mut conn = ctx.data().pool.acquire().await?;
   if let Some(guild_id) = ctx.guild_id() {
-    if let Some(enrollment_id) =
-      get_enrollment_id(&ctx.data().pool, &guild_id, &ctx.author().id).await?
-    {
-      let streak = get_streak(&ctx.data().pool, enrollment_id).await?;
+    if let Some(enrollment) = get_enrollment(&mut conn, &guild_id, &ctx.author().id).await? {
+      let now = Local::now();
+      let streak = get_streak(&mut conn, &enrollment, now).await?;
 
       if streak == 0 {
         ctx

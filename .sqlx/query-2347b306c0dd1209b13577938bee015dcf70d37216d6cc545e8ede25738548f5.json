@@ -1,32 +1,32 @@
 {
   "db_name": "SQLite",
-  "query": "\n      SELECT\n        MAX(created_at) AS created_at\n      , id\n      , guild_id\n      , user_id\n      , channel_id\n      , starting_at as \"starting_at: DateTime<Local>\"\n      , interval_hours\n      FROM enrollments\n      WHERE starting_at < ?\n      GROUP BY guild_id, user_id\n    ",
+  "query": "\n      SELECT\n        id,\n        guild_id,\n        user_id,\n        channel_id,\n        created_at as \"created_at: DateTime<Local>\",\n        starting_at as \"starting_at: DateTime<Local>\",\n        interval_hours\n      FROM current_enrollments\n      WHERE guild_id = ? AND user_id = ?\n    ",
   "describe": {
     "columns": [
       {
-        "name": "created_at",
+        "name": "id",
         "ordinal": 0,
         "type_info": "Int64"
       },
       {
-        "name": "id",
-        "ordinal": 1,
-        "type_info": "Int64"
-      },
-      {
         "name": "guild_id",
-        "ordinal": 2,
+        "ordinal": 1,
         "type_info": "Text"
       },
       {
         "name": "user_id",
-        "ordinal": 3,
+        "ordinal": 2,
         "type_info": "Text"
       },
       {
         "name": "channel_id",
-        "ordinal": 4,
+        "ordinal": 3,
         "type_info": "Text"
+      },
+      {
+        "name": "created_at: DateTime<Local>",
+        "ordinal": 4,
+        "type_info": "Int64"
       },
       {
         "name": "starting_at: DateTime<Local>",
@@ -40,17 +40,17 @@
       }
     ],
     "parameters": {
-      "Right": 1
+      "Right": 2
     },
     "nullable": [
+      true,
+      true,
+      true,
+      true,
       false,
-      true,
-      true,
-      true,
-      true,
       true,
       true
     ]
   },
-  "hash": "0c56541b8638077ab45d6a45c9f589a95c49312ebdd75faaf37b71dc3f74ce8c"
+  "hash": "2347b306c0dd1209b13577938bee015dcf70d37216d6cc545e8ede25738548f5"
 }

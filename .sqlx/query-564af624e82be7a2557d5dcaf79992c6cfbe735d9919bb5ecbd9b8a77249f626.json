@@ -1,0 +1,56 @@
+{
+  "db_name": "SQLite",
+  "query": "\n      SELECT\n        id,\n        guild_id,\n        user_id,\n        channel_id,\n        created_at as \"created_at: DateTime<Local>\",\n        starting_at as \"starting_at: DateTime<Local>\",\n        interval_hours\n      FROM current_enrollments\n    ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Int64"
+      },
+      {
+        "name": "guild_id",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "user_id",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "channel_id",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "created_at: DateTime<Local>",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "starting_at: DateTime<Local>",
+        "ordinal": 5,
+        "type_info": "Int64"
+      },
+      {
+        "name": "interval_hours",
+        "ordinal": 6,
+        "type_info": "Int64"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      true,
+      true,
+      true,
+      true,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "564af624e82be7a2557d5dcaf79992c6cfbe735d9919bb5ecbd9b8a77249f626"
+}

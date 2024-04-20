@@ -11,13 +11,14 @@ use poise::{
 };
 use serde_json::json;
 use services::{
-  enrollment::get_enrollment_id, gif::get_gif, reminder::get_reminders, share::create_share,
+  enrollment::get_enrollment, gif::get_gif, reminder::get_reminders, share::create_share,
 };
 use sqlx::SqlitePool;
 use tokio::{task, time};
 use tracing::error;
 
 mod commands;
+mod models;
 mod services;
 
 #[derive(Clone, Debug)]
@@ -40,7 +41,8 @@ fn spawn_reminders_task(ctx: serenity::Context, data: Data) {
         continue;
       }
 
-      match get_reminders(&data.pool, previous_time, now).await {
+      let mut conn = data.pool.acquire().await.unwrap();
+      match get_reminders(&mut conn, previous_time, now).await {
         Ok(reminders) => {
           for reminder in reminders {
             let gif = get_gif("judgemental cat", 10).await.ok().flatten();
@@ -119,11 +121,12 @@ async fn handle_event(
         return Ok(());
       }
 
+      let mut conn = data.pool.acquire().await.unwrap();
       if let Some(guild_id) = new_message.guild_id {
-        if let Ok(Some(enrollment_id)) =
-          get_enrollment_id(&data.pool, &guild_id, &new_message.author.id).await
+        if let Ok(Some(enrollment)) =
+          get_enrollment(&mut conn, &guild_id, &new_message.author.id).await
         {
-          create_share(&data.pool, enrollment_id).await?;
+          create_share(&data.pool, enrollment.id).await?;
           new_message.react(ctx, '🎨').await?;
         }
       }

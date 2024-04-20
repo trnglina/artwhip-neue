@@ -1,0 +1,32 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        SELECT\n          id,\n          enrollment_id,\n          created_at as \"created_at: DateTime<Local>\"\n        FROM shares\n        WHERE enrollment_id = ?\n        ORDER BY created_at\n      ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Int64"
+      },
+      {
+        "name": "enrollment_id",
+        "ordinal": 1,
+        "type_info": "Int64"
+      },
+      {
+        "name": "created_at: DateTime<Local>",
+        "ordinal": 2,
+        "type_info": "Int64"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "c4c99c161558c58d690733371bc908414de05489cf236ac9aedf80254d6067e5"
+}

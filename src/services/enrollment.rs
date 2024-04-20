@@ -1,34 +1,43 @@
 use chrono::{DateTime, Duration, Local};
 use poise::serenity_prelude as serenity;
+use sqlx::SqliteConnection;
 use tracing::info;
 
-pub async fn get_enrollment_id(
-  pool: &sqlx::SqlitePool,
+use crate::models::enrollment::{Enrollment, PartialEnrollment};
+
+pub async fn get_enrollment(
+  conn: &mut SqliteConnection,
   guild_id: &serenity::GuildId,
   user_id: &serenity::UserId,
-) -> Result<Option<i64>, anyhow::Error> {
+) -> Result<Option<Enrollment>, anyhow::Error> {
   let guild_id_str = guild_id.get().to_string();
   let user_id_str = user_id.get().to_string();
 
-  let enrollment = sqlx::query!(
+  let enrollment = sqlx::query_as!(
+    PartialEnrollment,
     r#"
       SELECT
-        MAX(created_at) AS created_at
-      , id
-      FROM enrollments
+        id,
+        guild_id,
+        user_id,
+        channel_id,
+        created_at as "created_at: DateTime<Local>",
+        starting_at as "starting_at: DateTime<Local>",
+        interval_hours
+      FROM current_enrollments
       WHERE guild_id = ? AND user_id = ?
     "#,
     guild_id_str,
     user_id_str,
   )
-  .fetch_optional(pool)
+  .fetch_optional(conn)
   .await?;
 
-  Ok(enrollment.map(|e| e.id).flatten())
+  Ok(enrollment.map(|e| e.into()))
 }
 
 pub async fn create_enrollment(
-  pool: &sqlx::SqlitePool,
+  conn: &mut SqliteConnection,
   chatgpt: &chatgpt::prelude::ChatGPT,
   guild_id: &serenity::GuildId,
   user_id: &serenity::UserId,
@@ -96,7 +105,7 @@ pub async fn create_enrollment(
     starting_at,
     interval_hours,
   )
-  .execute(pool)
+  .execute(conn)
   .await?;
 
   Ok((starting_at, interval_hours))

@@ -1,8 +1,15 @@
-use std::cmp::max;
-
-use chrono::{DateTime, Duration, Local};
+use chrono::{DateTime, Local};
 use poise::serenity_prelude as serenity;
-use tracing::info;
+use sqlx::{Connection, SqliteConnection};
+use tracing::{error, info};
+
+use crate::{
+  models::enrollment::{Enrollment, PartialEnrollment},
+  services::{
+    period::{calculate_populated_periods, construct_periods},
+    share::get_enrollment_shares,
+  },
+};
 
 pub struct Reminder {
   pub user_id: serenity::UserId,
@@ -10,89 +17,71 @@ pub struct Reminder {
 }
 
 pub async fn get_reminders(
-  pool: &sqlx::SqlitePool,
+  conn: &mut SqliteConnection,
   start: DateTime<Local>,
   end: DateTime<Local>,
 ) -> Result<Vec<Reminder>, anyhow::Error> {
-  let mut tx = pool.begin().await?;
+  let mut tx = conn.begin().await?;
 
-  let enrollments = sqlx::query!(
+  let enrollments = sqlx::query_as!(
+    PartialEnrollment,
     r#"
       SELECT
-        MAX(created_at) AS created_at
-      , id
-      , guild_id
-      , user_id
-      , channel_id
-      , starting_at as "starting_at: DateTime<Local>"
-      , interval_hours
-      FROM enrollments
-      WHERE starting_at < ?
-      GROUP BY guild_id, user_id
+        id,
+        guild_id,
+        user_id,
+        channel_id,
+        created_at as "created_at: DateTime<Local>",
+        starting_at as "starting_at: DateTime<Local>",
+        interval_hours
+      FROM current_enrollments
     "#,
-    end
   )
   .fetch_all(&mut *tx)
   .await?;
-
-  info!("Found {} relevant enrollments", enrollments.len());
+  info!("Found {} active enrollments", enrollments.len());
 
   let mut reminders = Vec::new();
   for enrollment in enrollments {
-    let starting_at = enrollment.starting_at.unwrap();
-    let interval_hours = enrollment.interval_hours.unwrap();
+    let enrollment: Enrollment = enrollment.into();
+    let periods = construct_periods(&enrollment, end);
+    if let Some(last_period) = periods.last() {
+      if last_period.end < start {
+        continue;
+      }
 
-    let period_n = (end - starting_at).num_hours() / interval_hours;
-    info!(
-      "Enrollment {} at period {}",
-      enrollment.id.unwrap(),
-      period_n
-    );
-    let effective_start = starting_at + Duration::hours(interval_hours * max(period_n - 1, 0));
-    let effective_end = starting_at + Duration::hours(interval_hours * period_n);
+      let shares = get_enrollment_shares(&mut *tx, enrollment.id).await?;
+      info!(?shares);
+      let populated_periods = calculate_populated_periods(periods, shares);
+      info!(?populated_periods);
 
-    if effective_end < start || effective_end >= end {
-      info!(
-        "Enrollment outside range: {} < {} <= {}",
-        start, effective_end, end
-      );
-      continue;
-    }
+      if let Some((_, populated)) = populated_periods.last() {
+        if !populated {
+          let user_id = enrollment
+            .user_id
+            .parse::<u64>()
+            .map(serenity::UserId::from);
 
-    if let Some(share) = sqlx::query!(
-      r#"
-        SELECT created_at as "created_at: DateTime<Local>"
-        FROM shares
-        WHERE enrollment_id = ? AND created_at > ? AND created_at <= ?
-      "#,
-      enrollment.id,
-      effective_start,
-      effective_end
-    )
-    .fetch_optional(&mut *tx)
-    .await?
-    {
-      info!("Enrollment already shared at {}", share.created_at);
-      continue;
-    }
+          let channel_id = enrollment
+            .channel_id
+            .parse::<u64>()
+            .map(serenity::ChannelId::from);
 
-    let user_id = enrollment
-      .user_id
-      .unwrap()
-      .parse::<u64>()
-      .map(serenity::UserId::from);
-
-    let channel_id = enrollment
-      .channel_id
-      .unwrap()
-      .parse::<u64>()
-      .map(serenity::ChannelId::from);
-
-    if let (Ok(user_id), Ok(channel_id)) = (user_id, channel_id) {
-      reminders.push(Reminder {
-        user_id,
-        channel_id,
-      });
+          if let (Ok(user_id), Ok(channel_id)) = (user_id, channel_id) {
+            reminders.push(Reminder {
+              user_id,
+              channel_id,
+            });
+          }
+        } else {
+          info!("Enrollment {} already fulfilled", enrollment.id)
+        }
+      } else {
+        error!(
+          "No populated periods found for enrollment {}",
+          enrollment.id
+        );
+      }
     }
   }
 

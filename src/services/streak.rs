@@ -1,52 +1,36 @@
-use chrono::{DateTime, Duration, Local};
+use chrono::{DateTime, Local};
+use sqlx::SqliteConnection;
 use tracing::info;
 
-pub async fn get_streak(pool: &sqlx::SqlitePool, enrollment_id: i64) -> Result<i64, anyhow::Error> {
-  let enrollment = sqlx::query!(
-    r#"
-      SELECT
-        id
-      , created_at as "created_at: DateTime<Local>"
-      , starting_at as "starting_at: DateTime<Local>"
-      , interval_hours
-      FROM enrollments
-      WHERE id = ?
-    "#,
-    enrollment_id,
-  )
-  .fetch_one(pool)
-  .await?;
+use crate::{
+  models::enrollment::Enrollment,
+  services::{
+    period::{calculate_populated_periods, construct_periods},
+    share::get_enrollment_shares,
+  },
+};
 
-  let shares = sqlx::query!(
-    r#"
-      SELECT created_at as "created_at: DateTime<Local>"
-      FROM shares
-      WHERE enrollment_id = ?
-      ORDER BY created_at
-    "#,
-    enrollment_id,
-  )
-  .fetch_all(pool)
-  .await?;
+pub async fn get_streak(
+  conn: &mut SqliteConnection,
+  enrollment: &Enrollment,
+  until: DateTime<Local>,
+) -> Result<usize, anyhow::Error> {
   info!(
-    "Found {} shares for enrollment {}",
-    shares.len(),
-    enrollment_id
+    "Calculating streak for enrollment {} until {}",
+    enrollment.id, until
   );
 
-  let mut streak = 0;
-  let mut last_end = enrollment.created_at;
-  for share in shares {
-    let end = enrollment.starting_at
-      + Duration::hours(enrollment.interval_hours * streak)
-      // + 50% of interval as leeway
-      + Duration::hours(enrollment.interval_hours / 2);
-    if share.created_at > last_end && share.created_at <= end {
-      streak += 1;
-    }
+  let periods = construct_periods(&enrollment, until);
+  let shares = get_enrollment_shares(conn, enrollment.id).await?;
+  info!(?shares);
+  let populated_periods = calculate_populated_periods(periods, shares);
+  info!(?populated_periods);
 
-    last_end = end;
-  }
+  let streak = populated_periods
+    .into_iter()
+    .rev()
+    .take_while(|(_, fulfilled)| *fulfilled)
+    .count();
 
   Ok(streak)
 }
