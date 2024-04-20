@@ -13,13 +13,15 @@ use serde_json::json;
 use services::{
   enrollment::get_enrollment, gif::get_gif, reminder::get_reminders, share::create_share,
 };
-use sqlx::SqlitePool;
+use sqlx::{migrate::Migrator, SqlitePool};
 use tokio::{task, time};
 use tracing::error;
 
 mod commands;
 mod models;
 mod services;
+
+static MIGRATOR: Migrator = sqlx::migrate!();
 
 #[derive(Clone, Debug)]
 pub struct Data {
@@ -91,6 +93,7 @@ async fn setup(
       .build()?,
   )?;
 
+  MIGRATOR.run(&pool.clone()).await?;
   let data = Data { pool, chatgpt };
 
   spawn_reminders_task(ctx.clone(), data.clone());
