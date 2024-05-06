@@ -1,20 +1,15 @@
-use std::{time::Duration, vec};
+use std::vec;
 
 use chatgpt::{
   config::{ChatGPTEngine, ModelConfigurationBuilder},
   prelude::ChatGPT,
 };
-use chrono::{DateTime, Local};
 use poise::{
-  serenity_prelude::{self as serenity, CacheHttp},
+  serenity_prelude::{self as serenity},
   FrameworkError,
 };
-use serde_json::json;
-use services::{
-  enrollment::get_enrollment, gif::get_gif, reminder::get_reminders, share::create_share,
-};
+use services::{enrollment::get_enrollment, share::create_share};
 use sqlx::{migrate::Migrator, SqlitePool};
-use tokio::{task, time};
 use tracing::error;
 
 mod commands;
@@ -31,6 +26,7 @@ pub struct Data {
 
 pub type Context<'a> = poise::Context<'a, Data, anyhow::Error>;
 
+/*
 fn spawn_reminders_task(ctx: serenity::Context, data: Data) {
   task::spawn(async move {
     let mut previous_time: DateTime<Local> = Local::now();
@@ -74,6 +70,7 @@ fn spawn_reminders_task(ctx: serenity::Context, data: Data) {
     }
   });
 }
+*/
 
 async fn setup(
   ctx: &serenity::Context,
@@ -96,7 +93,7 @@ async fn setup(
   MIGRATOR.run(&pool.clone()).await?;
   let data = Data { pool, chatgpt };
 
-  spawn_reminders_task(ctx.clone(), data.clone());
+  // spawn_reminders_task(ctx.clone(), data.clone());
   Ok(data)
 }
 
